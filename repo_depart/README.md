@@ -69,6 +69,37 @@ docker pull ghcr.io/sofian-ras/churnguard:v1.0.0
 ![Experiments](data/ui_mlflow_experiments_run.png)
 ![Production](data/ui_mlflow_version1_alias_prod.png)
 
+## Bonus
+
+### Monitoring de drift (Evidently)
+
+Génère un rapport HTML de drift entre les données d'entraînement et un échantillon de production simulé :
+
+```bash
+pip install evidently
+cd repo_depart
+python monitoring/drift.py
+# => drift_report.html
+```
+
+### Déploiement Kubernetes (k3s / kind / k3d)
+
+Les manifests sont dans `k8s/` :
+
+```bash
+kubectl apply -f k8s/mlflow-deployment.yaml
+kubectl apply -f k8s/mlflow-service.yaml
+kubectl apply -f k8s/api-deployment.yaml
+kubectl apply -f k8s/api-service.yaml
+```
+
+L'API est accessible sur le port `30800` du nœud.
+
+### Notification Slack sur échec CI
+
+Un job `notify` dans `.github/workflows/ci.yml` envoie une alerte Slack si un job échoue.
+Pour l'activer, je dois ajouter un secret `SLACK_WEBHOOK_URL` dans **Settings → Secrets → Actions** du repo GitHub.
+
 ## Licence
 
 MIT.

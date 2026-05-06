@@ -20,6 +20,12 @@ services:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
     depends_on:
       - mlflow
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   mlflow_db:
