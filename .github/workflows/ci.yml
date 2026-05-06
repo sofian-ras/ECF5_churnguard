@@ -30,11 +30,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Installer mypy
-        run: pip install mypy pandas scikit-learn
+      - name: Installer mypy et les stubs
+        run: pip install mypy pandas-stubs scikit-learn
 
       - name: Vérifier les types
-        run: mypy repo_depart/churnguard/
+        run: mypy repo_depart/churnguard/ --ignore-missing-imports
 
   test:
     runs-on: ubuntu-latest

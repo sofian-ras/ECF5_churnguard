@@ -27,7 +27,7 @@ def train_model(X: pd.DataFrame, y: pd.Series, model_name: str, params: dict) ->
     elif model_name == "gb":
         clf = GradientBoostingClassifier(random_state=42, **params)
     else:
-        raise ValueError(f"model_name doit être parmi : lr, rf, gb")
+        raise ValueError("model_name doit être parmi : lr, rf, gb")
 
     preprocessor = build_preprocessor(X)
 
