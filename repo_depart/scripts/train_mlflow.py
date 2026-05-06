@@ -1,5 +1,6 @@
 import mlflow
 import mlflow.sklearn
+from mlflow.models import infer_signature
 from sklearn.model_selection import train_test_split
 from churnguard.data import load_data, preprocess
 from churnguard.evaluate import compute_metrics
@@ -37,7 +38,8 @@ for run_name, model_info in models.items():
         mlflow.log_metrics(metrics)
 
         # Sauvegarde du modèle
-        mlflow.sklearn.log_model(model, "model")
+        signature = infer_signature(X_train, model.predict(X_train))
+        mlflow.sklearn.log_model(model, "model", signature=signature, input_example=X_train.iloc[:5])
 
         run_ids[run_name] = run.info.run_id
         results.append({"model": run_name, **metrics})

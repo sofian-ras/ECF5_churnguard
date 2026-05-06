@@ -3,9 +3,11 @@ import pandas as pd
 NUM_COLS = ["tenure", "MonthlyCharges", "TotalCharges", "SeniorCitizen"]
 
 def load_data(path: str) -> pd.DataFrame:
+    """Charge le CSV brut et retourne un DataFrame."""
     return pd.read_csv(path)
 
 def preprocess(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+    """Préprocesse le DataFrame et retourne (X, y) séparés."""
     df = df.copy()
     df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
     df = df.dropna()

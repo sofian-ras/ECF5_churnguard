@@ -10,12 +10,13 @@ Testing:
     curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -d '{...}'
 """
 
-import mlflow.pyfunc
+import mlflow.sklearn
 import pandas as pd
 from contextlib import asynccontextmanager
 from typing import List
 
 from fastapi import FastAPI, HTTPException
+from mlflow.tracking import MlflowClient
 from pydantic import BaseModel, Field
 
 class CustomerFeatures(BaseModel):
@@ -40,15 +41,18 @@ class CustomerFeatures(BaseModel):
     TotalCharges: float = Field(ge=0)
 
 
-# Variable globale pour stocker le modèle chargé
+# Variables globales pour stocker le modèle et sa version
 model = None
+model_version = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Charge le modèle au démarrage, libère les ressources à l'arrêt."""
-    global model
-    model = mlflow.pyfunc.load_model("models:/churnguard@Production")
-    print("Modèle chargé depuis MLflow !")
+    global model, model_version
+    model = mlflow.sklearn.load_model("models:/churnguard@Production")
+    mv = MlflowClient().get_model_version_by_alias("churnguard", "Production")
+    model_version = mv.version
+    print(f"Modèle chargé depuis MLflow (version {model_version}) !")
     yield
     print("API arrêtée.")
 
@@ -61,7 +65,7 @@ app = FastAPI(title="ChurnGuard API", lifespan=lifespan)
 @app.get("/health")
 def health():
     """GET /health - Vérifie que l'API est en ligne."""
-    return {"status": "ok", "model": "churnguard"}
+    return {"status": "ok", "model": "churnguard", "version": model_version}
 
 
 @app.post("/predict")
@@ -69,8 +73,7 @@ def predict(customer: CustomerFeatures):
     """POST /predict - Prédit si un client va churner."""
     try:
         df = pd.DataFrame([customer.model_dump()])
-        prediction = model.predict(df)
-        probability = float(prediction[0])
+        probability = float(model.predict_proba(df)[0, 1])
 
         return {
             "churn": probability >= 0.5,
@@ -92,11 +95,11 @@ def predict_batch(customers: List[CustomerFeatures]):
 
     try:
         df = pd.DataFrame([c.model_dump() for c in customers])
-        predictions = model.predict(df)
+        probabilities = model.predict_proba(df)[:, 1]
 
         return [
             {"churn": float(p) >= 0.5, "probability": float(p)}
-            for p in predictions
+            for p in probabilities
         ]
 
     except Exception as e:
