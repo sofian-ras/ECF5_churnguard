@@ -31,7 +31,6 @@ htmlcov/
 .DS_Store
 
 # Données (téléchargées par le script)
-data/*.csv
 !data/.gitkeep
 
 # Modèles (sauvegardés par le notebook)
