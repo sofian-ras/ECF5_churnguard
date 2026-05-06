@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+mlruns/
+mlflow.db
+data/
+notebook/
+*.zip
+test.json
+.gitignore

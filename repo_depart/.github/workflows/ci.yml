@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer ruff
+        run: pip install ruff
+
+      - name: Vérifier le style du code
+        run: ruff check churnguard/ api/
+  
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer mypy
+        run: pip install mypy pandas scikit-learn
+
+      - name: Vérifier les types
+        run: mypy churnguard/
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer les dépendances
+        run: pip install pandas scikit-learn mlflow fastapi uvicorn pydantic pytest pytest-cov
+
+      - name: Installer le package
+        run: pip install -e .
+
+      - name: Lancer les tests
+        run: pytest tests/ --cov=churnguard --cov-fail-under=70 -v
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Builder l'image Docker
+        run: docker build -t churnguard-api .
