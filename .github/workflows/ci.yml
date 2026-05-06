@@ -19,8 +19,8 @@ jobs:
         run: pip install ruff
 
       - name: Vérifier le style du code
-        run: ruff check churnguard/ api/
-  
+        run: ruff check repo_depart/churnguard/ repo_depart/api/
+
   typecheck:
     runs-on: ubuntu-latest
     steps:
@@ -34,7 +34,7 @@ jobs:
         run: pip install mypy pandas scikit-learn
 
       - name: Vérifier les types
-        run: mypy churnguard/
+        run: mypy repo_depart/churnguard/
 
   test:
     runs-on: ubuntu-latest
@@ -49,9 +49,11 @@ jobs:
         run: pip install pandas scikit-learn mlflow fastapi uvicorn pydantic pytest pytest-cov
 
       - name: Installer le package
+        working-directory: repo_depart
         run: pip install -e .
 
       - name: Lancer les tests
+        working-directory: repo_depart
         run: pytest tests/ --cov=churnguard --cov-fail-under=70 -v
 
   build:
@@ -61,4 +63,5 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Builder l'image Docker
+        working-directory: repo_depart
         run: docker build -t churnguard-api .
