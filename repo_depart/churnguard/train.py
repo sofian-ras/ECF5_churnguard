@@ -1,4 +1,5 @@
 import argparse
+from typing import Any
 
 import mlflow
 import mlflow.sklearn
@@ -36,7 +37,7 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
 
 
 def train_model(
-    X: pd.DataFrame, y: pd.Series, model_name: str, params: dict
+    X: pd.DataFrame, y: pd.Series, model_name: str, params: dict[str, Any]
 ) -> Pipeline:
     """Entraîne un pipeline sklearn et le retourne fitté."""
 

@@ -9,7 +9,7 @@ from sklearn.metrics import (
 from sklearn.pipeline import Pipeline
 
 
-def compute_metrics(model: Pipeline, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
+def compute_metrics(model: Pipeline, X_test: pd.DataFrame, y_test: pd.Series) -> dict[str, float]:
     """Calcule les 5 métriques de classification et les retourne dans un dict."""
     y_pred = model.predict(X_test)
     y_proba = model.predict_proba(X_test)[:, 1]
