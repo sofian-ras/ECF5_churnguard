@@ -15,11 +15,20 @@ jobs:
         with:
           python-version: "3.11"
 
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-lint-${{ hashFiles('repo_depart/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-lint-
+
       - name: Installer ruff
         run: pip install ruff
 
       - name: Vérifier le style du code
         run: ruff check repo_depart/churnguard/ repo_depart/api/
+
+      - name: Vérifier le formatage du code
+        run: ruff format --check repo_depart/churnguard/ repo_depart/api/
 
   typecheck:
     runs-on: ubuntu-latest
@@ -30,11 +39,17 @@ jobs:
         with:
           python-version: "3.11"
 
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-typecheck-${{ hashFiles('repo_depart/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-typecheck-
+
       - name: Installer mypy et les stubs
-        run: pip install mypy pandas-stubs scikit-learn
+        run: pip install mypy pandas-stubs scikit-learn mlflow fastapi pydantic
 
       - name: Vérifier les types
-        run: mypy repo_depart/churnguard/ --ignore-missing-imports
+        run: mypy repo_depart/churnguard/
 
   test:
     runs-on: ubuntu-latest
@@ -44,6 +59,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-test-${{ hashFiles('repo_depart/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-test-
 
       - name: Installer les dépendances
         run: pip install pandas scikit-learn mlflow fastapi uvicorn pydantic pytest pytest-cov
@@ -64,4 +85,26 @@ jobs:
 
       - name: Builder l'image Docker
         working-directory: repo_depart
-        run: docker build -t churnguard-api .
+        run: docker build --target api -t churnguard-api .
+
+      - name: Scanner l'image avec Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: churnguard-api
+          format: table
+          exit-code: '0'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test, build]
+    if: failure()
+    steps:
+      - name: Notification Slack sur échec CI
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: "❌ CI ChurnGuard échouée sur `${{ github.ref_name }}`"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

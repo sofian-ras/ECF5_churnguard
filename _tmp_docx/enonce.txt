@@ -1,0 +1,140 @@
+﻿ECF MLOps â€” Concepteur DÃ©veloppeur en IA (RNCP 35288, bloc 5)
+ChurnGuardMLOps
+Industrialiser un modÃ¨le de prÃ©diction de rÃ©siliation client
+2 jours Â· individuel Â·
+âœ¦
+Contexte fictif
+Vous Ãªtes consultant freelance, mandatÃ© par TelcoFr, un opÃ©rateur de tÃ©lÃ©communications franÃ§ais de 1,2 million de clients. La direction marketing a fait dÃ©velopper en interne un modÃ¨le de prÃ©diction de rÃ©siliation (churn) â€” il fonctionne sur le poste de la data scientist qui l'a Ã©crit, mais personne d'autre ne sait le faire tourner. Le notebook est un mille-feuille de cellules, le modÃ¨le est un fichier .pkl envoyÃ© par mail, et chaque appel Ã  la prÃ©diction passe par un copier-coller dans Jupyter.
+Votre mission : reprendre ce projet et l'amener au standard MLOps de l'entreprise. Ã€ la fin des deux jours, n'importe quel dÃ©veloppeur doit pouvoir cloner le repo, faire `docker compose up`, et obtenir une API de prÃ©diction fonctionnelle. La CI doit tourner sur chaque push, le modÃ¨le doit Ãªtre versionnÃ© dans MLflow, et les tests doivent passer.
+Ce que vous ne faites pas
+Vous ne touchez pas Ã  la data science. Pas d'EDA, pas de feature engineering, pas de tuning d'hyperparamÃ¨tres. Le modÃ¨le existant est ce qu'il est â€” votre rÃ´le est de l'industrialiser, pas de l'amÃ©liorer. Si vous changez les performances du modÃ¨le, ce n'est pas un objectif Ã©valuÃ©.
+âœ¦
+DonnÃ©es
+Le dataset est public : Telco Customer Churn, publiÃ© par IBM Sample Data sur la plateforme IBM Cognos Analytics. Il contient 7 043 clients d'un opÃ©rateur tÃ©lÃ©com amÃ©ricain et 21 colonnes (profil, abonnements, facturation, label de churn).
+Source officielle :
+â€” IBM Sample Data Sets â€” https://www.ibm.com/community/blogs/datasets/
+â€” Mirror Kaggle (tÃ©lÃ©chargement direct) â€” https://www.kaggle.com/datasets/blastchar/telco-customer-churn
+Le fichier source CSV (utilisable sans authentification) est Ã©galement hÃ©bergÃ© par plusieurs tiers Ã  des fins de reproduction acadÃ©mique. Le repo de dÃ©part contient un script `scripts/download_data.py` qui tÃ©lÃ©charge automatiquement le fichier depuis une URL stable et vÃ©rifie son intÃ©gritÃ© par checksum SHA-256.
+CaractÃ©ristique
+Valeur
+Nombre de lignes
+7 043 clients
+Nombre de colonnes
+21 (incluant le label `Churn`)
+Type de problÃ¨me
+Classification binaire (Churn = Yes / No)
+DÃ©sÃ©quilibre des classes
+â‰ˆ 26,5 % de churners
+Licence
+IBM Sample Data â€” usage libre Ã  des fins Ã©ducatives et de recherche
+Format
+CSV, ~960 Ko
+
+SchÃ©ma des colonnes (pour information, vous n'avez pas Ã  le manipuler vous-mÃªme) :
+â€” IdentitÃ© :customerID, gender, SeniorCitizen, Partner, Dependents.
+â€” AnciennetÃ© et abonnements : tenure, PhoneService, MultipleLines, InternetService, OnlineSecurity, OnlineBackup, DeviceProtection, TechSupport, StreamingTV, StreamingMovies.
+â€” Contrat et facturation : Contract, PaperlessBilling, PaymentMethod, MonthlyCharges, TotalCharges.
+â€” Label : Churn (Yes / No).
+âœ¦
+Repo de dÃ©part
+Vous recevez un repository volontairement Â« sale Â» mais fonctionnel. Vous le clonez, vous l'amenez au standard de production. Aucune ligne du notebook ne doit Ãªtre modifiÃ©e pour amÃ©liorer le modÃ¨le â€” vous extrayez son contenu en modules Python propres.
+Contenu fourni :
+â€” `notebook/exploration.ipynb` â€” le notebook de la data scientist (entraÃ®nement RandomForest, mÃ©triques, sauvegarde .pkl). Il marche.
+â€” `scripts/download_data.py` â€” tÃ©lÃ©charge le CSV depuis la source publique avec vÃ©rification SHA-256.
+â€” `README.md` â€” mission dÃ©crite en quelques lignes, sans solution.
+â€” `.gitignore` Python standard.
+â€” `requirements.txt` minimal (pandas, scikit-learn, jupyter).
+Ce que le repo de dÃ©part ne contient pas (et que vous devez ajouter) :
+â€” Pas de tests.
+â€” Pas de structure modulaire (tout est dans le notebook).
+â€” Pas de Dockerfile, pas de docker-compose.
+â€” Pas de configuration MLflow.
+â€” Pas d'API.
+â€” Pas de CI.
+âœ¦
+Etape 1Â : Refactoring, tests, MLflow. Ã€ la fin du jour 1, votre repo est propre, vos tests passent et vous avez un modÃ¨le promu en production dans MLflow.
+Ã‰tape 1.1 â€” Structure du projet
+â€” CrÃ©er un package Python `churnguard/` avec les modules suivants :
+churnguard/â”œâ”€â”€ __init__.pyâ”œâ”€â”€ data.py        # chargement, prÃ©processing, splitâ”œâ”€â”€ train.py       # entraÃ®nement, Ã©valuation, persistanceâ””â”€â”€ evaluate.py    # mÃ©triques, rapport classificationtests/â”œâ”€â”€ test_data.pyâ””â”€â”€ test_train.py
+â€” Initialiser un `pyproject.toml` (uv ou Poetry au choix) avec dÃ©pendances explicites.
+â€” Configurer pre-commit hooks : ruff (lint + format), mypy (typage strict sur le package).
+Ã‰tape 1.2 â€” Extraction du notebook vers les modules
+â€” Copier le code du notebook dans les modules en respectant la sÃ©paration des responsabilitÃ©s.
+â€” Toute fonction publique doit avoir un type-hint et un docstring d'une ligne.
+â€” `data.load_data(path: str) -> pd.DataFrame` charge le CSV brut.
+â€” `data.preprocess(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]` fait le prÃ©processing et retourne X, y.
+â€” `train.train_model(X, y, model_name: str, params: dict) -> Pipeline` entraÃ®ne et retourne le pipeline scikit-learn.
+â€” `evaluate.compute_metrics(model, X_test, y_test) -> dict` retourne accuracy, precision, recall, f1, roc_auc.
+Ã‰tape 1.3 â€” Tests pytest (6 tests minimum)
+â€” Test 1 â€” `test_load_data_returns_dataframe` : vÃ©rifie la forme du DataFrame chargÃ©.
+â€” Test 2 â€” `test_load_data_has_expected_columns` : vÃ©rifie la prÃ©sence des 21 colonnes attendues.
+â€” Test 3 â€” `test_preprocess_returns_features_and_target` : X et y sÃ©parÃ©s correctement.
+â€” Test 4 â€” `test_preprocess_handles_missing_total_charges` : la colonne TotalCharges contient des espaces vides Ã  convertir â€” testez le cas.
+â€” Test 5 â€” `test_train_model_returns_fitted_pipeline` : modÃ¨le entraÃ®nÃ©, capable de prÃ©dire.
+â€” Test 6 â€” `test_compute_metrics_returns_expected_keys` : dict avec les 5 mÃ©triques attendues.
+â€” Coverage minimum : 70 % sur le package `churnguard`. Outil : pytest-cov.
+Ã‰tape 1.4 â€” MLflow tracking
+â€” Lancer un serveur MLflow local : `mlflow server --host 127.0.0.1 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns`
+â€” Adapter `train.py` pour logger automatiquement chaque entraÃ®nement : paramÃ¨tres, mÃ©triques (les 5), artefacts (modÃ¨le), signature, exemple d'input.
+â€” EntraÃ®ner et logger 3 modÃ¨les : LogisticRegression, RandomForestClassifier, GradientBoostingClassifier â€” chacun dans un `mlflow.start_run()` avec un nom de run explicite.
+â€” Comparer les 3 runs dans l'UI MLflow (http://127.0.0.1:5000).
+Ã‰tape 1.5 â€” MLflow Model Registry
+â€” Enregistrer le meilleur modÃ¨le dans le registry sous le nom `churnguard`.
+â€” Promouvoir manuellement la version 1 en stage `Staging`, puis `Production` via l'UI ou via le SDK.
+â€” VÃ©rifier que vous pouvez charger le modÃ¨le promu : `mlflow.pyfunc.load_model("models:/churnguard/Production")`.
+â€” Bonus : un script `python -m churnguard.train --model rf --register` qui enchaÃ®ne entraÃ®nement + log + registry.
+Livrable 1 :
+â€” Repo refactorisÃ©, structure modulaire claire, tests verts (`pytest --cov`).
+â€” 3 modÃ¨les loggÃ©s dans MLflow, 1 modÃ¨le promu en `Production` dans le registry.
+â€” Capture d'Ã©cran de l'UI MLflow (Ã  inclure dans le README final).
+âœ¦
+Etape2Â :API, Docker, GitHub Actions. Ã€ la fin du jour 2, `docker compose up` suffit Ã  dÃ©marrer toute la stack et la CI tourne sur chaque push.
+Ã‰tape 2.1 â€” API FastAPI
+â€” CrÃ©er un module `api/main.py` avec FastAPI.
+â€” `GET /health` retourne`{"status": "ok", "model": "churnguard", "version": "<version MLflow>"}`.
+â€” `POST /predict` reÃ§oit un dict des features d'un client, retourne `{"churn": true|false, "probability": 0.0â€“1.0}`.
+â€” `POST /predict/batch` reÃ§oit une liste de clients (max 100), retourne la liste des prÃ©dictions.
+â€” Validation Pydantic v2 stricte sur les types et bornes raisonnables (tenure â‰¥ 0, MonthlyCharges â‰¥ 0, etc.).
+â€” Le modÃ¨le est chargÃ© une seule fois au dÃ©marrage via `lifespan` depuis MLflowregistry (`models:/churnguard/Production`).
+â€” Gestion d'erreurs HTTP : 422 sur payload invalide, 400 sur batch vide ou > 100, 503 si modÃ¨le non chargÃ©.
+Ã‰tape 2.2 â€” Dockerfilemulti-stage
+â€” Stage `builder` : python:3.11-slim, installe les dÃ©pendances dans un venv.
+â€” Stage `runtime` : python:3.11-slim, copie le venv et le code, expose le port 8000, lance uvicorn.
+â€” Image finale visÃ©e : moins de 500 Mo. VÃ©rifier avec `docker images`.
+â€” Bonus : utilisateur non-root, healthcheck Docker, .dockerignore propre.
+Ã‰tape 2.3 â€” docker-compose
+â€” Service `mlflow` : serveur MLflow avec backend SQLite et volume persistant pour `./mlruns`.
+â€” Service `api` : votre API FastAPI, dÃ©pend de `mlflow`, variable d'environnement `MLFLOW_TRACKING_URI` pointant vers `mlflow:5000`.
+â€” RÃ©seau Docker partagÃ© entre les deux services.
+â€” Test manuel : `docker compose up --build` puis `curl http://localhost:8000/health`, puis `curl -X POST http://localhost:8000/predict -d '{...}'`.
+Ã‰tape 2.4 â€” Workflow CI
+â€” Fichier `.github/workflows/ci.yml` dÃ©clenchÃ© sur `push` et `pull_request`.
+â€” Job `lint` : ruff check + ruff format --check.
+â€” Job `typecheck` : mypy sur le package.
+â€” Job `test` : pytest avec coverage, Ã©chec si coverage < 70 %.
+â€” Job `build` : docker build de l'image API, scan Trivy sur l'image.
+â€” Tous les jobs en parallÃ¨le quand c'est possible (`needs:` uniquement quand nÃ©cessaire).
+â€” Cache pip / uv pour accÃ©lÃ©rer les exÃ©cutions rÃ©pÃ©tÃ©es.
+Ã‰tape 2.5 â€” Workflow CD (sur tag)
+â€” Fichier `.github/workflows/release.yml` dÃ©clenchÃ© sur `push` de tag `v*.*.*`.
+â€” Build de l'image API + push vers GitHub Container Registry (ghcr.io/<user>/churnguard:tag).
+â€” Login via `${{ secrets.GITHUB_TOKEN }}` (pas de secret Ã  configurer manuellement).
+â€” Bonus : gÃ©nÃ©ration automatique d'un release notes via ConventionalCommits.
+Ã‰tape 2.6 â€” README et dÃ©mo
+â€” README final "vitrine" : badge CI, schÃ©ma d'architecture (ASCII ou image), section quickstart `docker compose up`, exemple d'appel API avec curl, lien vers l'image GHCR.
+â€” DÃ©mo individuelle 15 minutes : montrer le pipeline de bout en bout (clone â†’ docker compose up â†’ curlpredict â†’ modification de code â†’ push â†’ CI verte).
+Livrable final :
+â€” Repo public sur GitHub, badge CI vert.
+â€” Image Docker de l'API publiÃ©e sur ghcr.io ou un autre registry.
+â€” `docker compose up --build` dÃ©marre toute la stack en moins de 2 minutes.
+â€” README Ã  jour, dÃ©mo prÃªte.
+âœ¦
+
+Bonus  :
+â€” Monitoring de drift avec Evidently sur un Ã©chantillon de production simulÃ©.
+â€” Healthcheck Docker actif et utilisÃ© dans docker-compose.
+â€” Image Docker < 300 Mo (multi-stage agressif, distroless ou alpine).
+â€” DÃ©ploiement final sur un cluster k3s local (kind, k3d) avec manifests YAML.
+â€” Notification Slack ou email sur Ã©chec de CI.
+âœ¦
+Bon ECF.

@@ -1,0 +1,18 @@
+changelog:
+  categories:
+    - title: "Nouvelles fonctionnalités"
+      labels: ["feat", "feature"]
+    - title: "Corrections de bugs"
+      labels: ["fix", "bugfix"]
+    - title: "Performance"
+      labels: ["perf"]
+    - title: "Refactoring"
+      labels: ["refactor"]
+    - title: "Tests"
+      labels: ["test"]
+    - title: "CI/CD"
+      labels: ["ci", "cd"]
+    - title: "Documentation"
+      labels: ["docs"]
+    - title: "Autres changements"
+      labels: ["*"]

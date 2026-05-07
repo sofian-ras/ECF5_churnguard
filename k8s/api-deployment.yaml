@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: churnguard-api
+  labels:
+    app: churnguard-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: churnguard-api
+  template:
+    metadata:
+      labels:
+        app: churnguard-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/sofian-ras/churnguard:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MLFLOW_TRACKING_URI
+              value: http://mlflow:5000
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false

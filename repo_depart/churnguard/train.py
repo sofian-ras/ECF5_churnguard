@@ -21,7 +21,8 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
 
     preprocessor = ColumnTransformer([
         ("num", StandardScaler(), num_cols),
-        ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols),
+        # sparse_output=False → sortie dense (numpy), scipy non requis à l'inférence
+        ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), cat_cols),  # dense output requis par le pipeline
     ])
 
     return preprocessor

@@ -34,6 +34,7 @@ def train_and_register(data_path: str = "data/telco_churn.csv") -> str:
 
     results: list[dict[str, float | str]] = []
     run_ids: dict[str, str] = {}
+    trained_models = {}
 
     for run_name, model_info in models.items():
         print(f"Entraînement de {run_name}...")
@@ -59,6 +60,7 @@ def train_and_register(data_path: str = "data/telco_churn.csv") -> str:
             )
 
             run_ids[run_name] = run.info.run_id
+            trained_models[run_name] = model
             results.append({"model": run_name, **metrics})
             print(
                 f"{run_name} -> accuracy: {metrics['accuracy']:.3f} | "
@@ -70,6 +72,7 @@ def train_and_register(data_path: str = "data/telco_churn.csv") -> str:
     print(f"\nMeilleur modèle : {best_name}")
 
     best_run_id = run_ids[best_name]
+
     registered = mlflow.register_model(f"runs:/{best_run_id}/model", "churnguard")
 
     client = MlflowClient()
@@ -85,6 +88,7 @@ def train_and_register(data_path: str = "data/telco_churn.csv") -> str:
         stage="Production",
         archive_existing_versions=True,
     )
+    client.set_registered_model_alias("churnguard", "champion", registered.version)
 
     model_prod = mlflow.pyfunc.load_model("models:/churnguard/Production")
     print("Modèle chargé depuis Production :", type(model_prod))

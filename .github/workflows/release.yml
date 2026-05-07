@@ -27,5 +27,11 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: repo_depart
+          target: api
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/churnguard:${{ github.ref_name }}
+
+      - name: Créer la release avec notes automatiques
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

@@ -8,7 +8,7 @@ services:
       - mlflow_db:/app/db
     ports:
       - "5000:5000"
-    command: bash -c "pip install mlflow -q && mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////app/db/mlflow.db --default-artifact-root file:///app/mlruns --serve-artifacts --workers 1 --disable-security-middleware"
+    command: bash -c "pip install mlflow==2.22.0 -q && mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////app/db/mlflow.db --default-artifact-root mlflow-artifacts:/ --artifacts-destination file:///app/mlruns --serve-artifacts --workers 1"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/')"]
       interval: 10s
@@ -16,8 +16,25 @@ services:
       retries: 12
       start_period: 20s
 
+  bootstrap:
+    build:
+      context: .
+      target: bootstrap
+    volumes:
+      - ./data:/app/data
+      - mlflow_db:/app/db
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - PYTHONPATH=/app
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    restart: "no"
+
   api:
-    build: .
+    build:
+      context: .
+      target: api
     ports:
       - "8000:8000"
     volumes:
@@ -28,7 +45,8 @@ services:
     depends_on:
       mlflow:
         condition: service_healthy
-    command: sh -c "python scripts/bootstrap_model.py && uvicorn api.main:app --host 0.0.0.0 --port 8000"
+      bootstrap:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s

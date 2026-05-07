@@ -6,11 +6,10 @@ If `churnguard` has no model in Production, this script:
 3) promotes the best one to Production.
 """
 
-from __future__ import annotations
-
 import time
 
 import mlflow
+import mlflow.pyfunc
 from mlflow.tracking import MlflowClient
 
 from download_data import DEST as DATA_PATH
@@ -34,11 +33,15 @@ def wait_for_mlflow(timeout_seconds: int = 90) -> None:
 
 
 def production_model_exists() -> bool:
-    """Return True if at least one version is in Production stage."""
+    """Return True only if a Production model exists and is loadable."""
     client = MlflowClient()
     try:
         versions = client.get_latest_versions("churnguard", stages=["Production"])
-        return len(versions) > 0
+        if len(versions) == 0:
+            return False
+
+        mlflow.pyfunc.load_model("models:/churnguard/Production")
+        return True
     except Exception:
         return False
 
@@ -49,7 +52,6 @@ def bootstrap() -> None:
 
     if production_model_exists():
         print("[bootstrap] modèle Production déjà présent")
-        mlflow.pyfunc.load_model("models:/churnguard/Production")
         return
 
     print("[bootstrap] aucun modèle Production, initialisation...")
