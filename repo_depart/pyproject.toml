@@ -20,3 +20,8 @@ dependencies = [
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["churnguard*"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["churnguard"]

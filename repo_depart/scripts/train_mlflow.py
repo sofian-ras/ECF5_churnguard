@@ -1,67 +1,96 @@
 import mlflow
 import mlflow.sklearn
 from mlflow.models import infer_signature
+from mlflow.tracking import MlflowClient
 from sklearn.model_selection import train_test_split
+
 from churnguard.data import load_data, preprocess
 from churnguard.evaluate import compute_metrics
 from churnguard.train import train_model
 
-df = load_data("data/telco_churn.csv")
-X, y = preprocess(df)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+def train_and_register(data_path: str = "data/telco_churn.csv") -> str:
+    """Entraîne 3 modèles, enregistre le meilleur et le promeut en Production."""
+    df = load_data(data_path)
+    X, y = preprocess(df)
 
-# Les 3 modèles à comparer
-models = {
-    "LogisticRegression": {"model_name": "lr", "params": {}},
-    "RandomForest": {"model_name": "rf", "params": {"n_estimators": 200, "max_depth": 10}},
-    "GradientBoosting": {"model_name": "gb", "params": {"n_estimators": 200, "max_depth": 5}},
-}
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
 
-mlflow.set_experiment("churnguard")
+    models = {
+        "LogisticRegression": {"model_name": "lr", "params": {}},
+        "RandomForest": {
+            "model_name": "rf",
+            "params": {"n_estimators": 200, "max_depth": 10},
+        },
+        "GradientBoosting": {
+            "model_name": "gb",
+            "params": {"n_estimators": 200, "max_depth": 5},
+        },
+    }
 
-results = []
-run_ids = {}
+    mlflow.set_experiment("churnguard")
 
-for run_name, model_info in models.items():
-    print(f"Entraînement de {run_name}...")
+    results: list[dict[str, float | str]] = []
+    run_ids: dict[str, str] = {}
 
-    with mlflow.start_run(run_name=run_name) as run:
-        # Entraînement
-        model = train_model(X_train, y_train, model_info["model_name"], model_info["params"])
+    for run_name, model_info in models.items():
+        print(f"Entraînement de {run_name}...")
 
-        # Métriques
-        metrics = compute_metrics(model, X_test, y_test)
+        with mlflow.start_run(run_name=run_name) as run:
+            model = train_model(
+                X_train,
+                y_train,
+                model_info["model_name"],
+                model_info["params"],
+            )
+            metrics = compute_metrics(model, X_test, y_test)
 
-        # Log des paramètres et métriques dans MLflow
-        mlflow.log_params(model_info["params"])
-        mlflow.log_metrics(metrics)
+            mlflow.log_params(model_info["params"])
+            mlflow.log_metrics(metrics)
 
-        # Sauvegarde du modèle
-        signature = infer_signature(X_train, model.predict(X_train))
-        mlflow.sklearn.log_model(model, "model", signature=signature, input_example=X_train.iloc[:5])
+            signature = infer_signature(X_train, model.predict(X_train))
+            mlflow.sklearn.log_model(
+                model,
+                "model",
+                signature=signature,
+                input_example=X_train.iloc[:5],
+            )
 
-        run_ids[run_name] = run.info.run_id
-        results.append({"model": run_name, **metrics})
-        print(f"{run_name} -> accuracy: {metrics['accuracy']:.3f} | roc_auc: {metrics['roc_auc']:.3f}")
+            run_ids[run_name] = run.info.run_id
+            results.append({"model": run_name, **metrics})
+            print(
+                f"{run_name} -> accuracy: {metrics['accuracy']:.3f} | "
+                f"roc_auc: {metrics['roc_auc']:.3f}"
+            )
 
-# on affiche juste le meilleur modèle
-best = max(results, key=lambda x: x["roc_auc"])
-print(f"\nMeilleur modèle : {best['model']}")
-print(f"roc_auc : {best['roc_auc']:.3f}")
-print(f"accuracy : {best['accuracy']:.3f}")
+    best = max(results, key=lambda x: float(x["roc_auc"]))
+    best_name = str(best["model"])
+    print(f"\nMeilleur modèle : {best_name}")
+
+    best_run_id = run_ids[best_name]
+    registered = mlflow.register_model(f"runs:/{best_run_id}/model", "churnguard")
+
+    client = MlflowClient()
+    client.transition_model_version_stage(
+        name="churnguard",
+        version=registered.version,
+        stage="Staging",
+        archive_existing_versions=False,
+    )
+    client.transition_model_version_stage(
+        name="churnguard",
+        version=registered.version,
+        stage="Production",
+        archive_existing_versions=True,
+    )
+
+    model_prod = mlflow.pyfunc.load_model("models:/churnguard/Production")
+    print("Modèle chargé depuis Production :", type(model_prod))
+    return str(registered.version)
 
 
-# Enregistrer le meilleur modèle dans le registry
-from mlflow.tracking import MlflowClient
-
-best_run_id = run_ids[best["model"]]
-registered = mlflow.register_model(f"runs:/{best_run_id}/model", "churnguard")
-
-client = MlflowClient()
-client.set_registered_model_alias("churnguard", "Production", registered.version)
-print("Modèle promu en Production !")
-
-# Vérifier que le modèle est chargeable depuis Production
-model_prod = mlflow.pyfunc.load_model("models:/churnguard@Production")
-print("Modèle chargé depuis Production :", type(model_prod))
+if __name__ == "__main__":
+    version = train_and_register()
+    print(f"Modèle promu en Production (version {version})")
