@@ -28,3 +28,7 @@ include = ["churnguard*"]
 python_version = "3.11"
 strict = true
 files = ["churnguard"]
+
+[[tool.mypy.overrides]]
+module = ["sklearn.*", "mlflow.*"]
+ignore_missing_imports = true

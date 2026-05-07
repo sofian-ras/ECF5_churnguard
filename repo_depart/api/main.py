@@ -19,6 +19,7 @@ from fastapi import FastAPI, HTTPException
 from mlflow.tracking import MlflowClient
 from pydantic import BaseModel, ConfigDict, Field
 
+
 class CustomerFeatures(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -52,6 +53,7 @@ class CustomerFeatures(BaseModel):
 model = None
 model_version = None
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Charge le modèle au démarrage, libère les ressources à l'arrêt."""
@@ -74,6 +76,7 @@ app = FastAPI(title="ChurnGuard API", lifespan=lifespan)
 
 # Endpoints :
 
+
 @app.get("/health")
 def health():
     """GET /health - Vérifie que l'API est en ligne."""
@@ -92,10 +95,7 @@ def predict(customer: CustomerFeatures):
         df = pd.DataFrame([customer.model_dump()])
         probability = float(model.predict_proba(df)[0, 1])
 
-        return {
-            "churn": probability >= 0.5,
-            "probability": probability
-        }
+        return {"churn": probability >= 0.5, "probability": probability}
 
     except Exception as e:
         raise HTTPException(status_code=503, detail=str(e))
@@ -118,8 +118,7 @@ def predict_batch(customers: list[CustomerFeatures]):
         probabilities = model.predict_proba(df)[:, 1]
 
         return [
-            {"churn": float(p) >= 0.5, "probability": float(p)}
-            for p in probabilities
+            {"churn": float(p) >= 0.5, "probability": float(p)} for p in probabilities
         ]
 
     except Exception as e:

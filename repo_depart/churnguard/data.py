@@ -2,9 +2,11 @@ import pandas as pd
 
 NUM_COLS = ["tenure", "MonthlyCharges", "TotalCharges", "SeniorCitizen"]
 
+
 def load_data(path: str) -> pd.DataFrame:
     """Charge le CSV brut et retourne un DataFrame."""
     return pd.read_csv(path)
+
 
 def preprocess(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     """Préprocesse le DataFrame et retourne (X, y) séparés."""
@@ -17,6 +19,7 @@ def preprocess(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     X: pd.DataFrame = df.drop(columns=["Churn"])
 
     return X, y
+
 
 def get_feature_columns(X: pd.DataFrame) -> tuple[list[str], list[str]]:
     """Retourne (num_cols, cat_cols) — séparation pour le ColumnTransformer."""

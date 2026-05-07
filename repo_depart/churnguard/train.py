@@ -15,19 +15,29 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from churnguard.data import get_feature_columns, load_data, preprocess
 from churnguard.evaluate import compute_metrics
 
+
 def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
     """Construit le ColumnTransformer pour le preprocessing."""
     num_cols, cat_cols = get_feature_columns(X)
 
-    preprocessor = ColumnTransformer([
-        ("num", StandardScaler(), num_cols),
-        # sparse_output=False → sortie dense (numpy), scipy non requis à l'inférence
-        ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), cat_cols),  # dense output requis par le pipeline
-    ])
+    preprocessor = ColumnTransformer(
+        [
+            ("num", StandardScaler(), num_cols),
+            # sparse_output=False → sortie dense (numpy), scipy non requis à l'inférence
+            (
+                "cat",
+                OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+                cat_cols,
+            ),  # dense output requis par le pipeline
+        ]
+    )
 
     return preprocessor
 
-def train_model(X: pd.DataFrame, y: pd.Series, model_name: str, params: dict) -> Pipeline:
+
+def train_model(
+    X: pd.DataFrame, y: pd.Series, model_name: str, params: dict
+) -> Pipeline:
     """Entraîne un pipeline sklearn et le retourne fitté."""
 
     if model_name == "lr":
@@ -41,10 +51,12 @@ def train_model(X: pd.DataFrame, y: pd.Series, model_name: str, params: dict) ->
 
     preprocessor = build_preprocessor(X)
 
-    pipeline = Pipeline([
-        ("prep", preprocessor),
-        ("clf", clf),
-    ])
+    pipeline = Pipeline(
+        [
+            ("prep", preprocessor),
+            ("clf", clf),
+        ]
+    )
 
     pipeline.fit(X, y)
 
@@ -79,7 +91,9 @@ def run_training_cli(model_name: str, register: bool, data_path: str) -> None:
             input_example=X_train.iloc[:5],
         )
 
-        registered = mlflow.register_model(f"runs:/{run.info.run_id}/model", "churnguard")
+        registered = mlflow.register_model(
+            f"runs:/{run.info.run_id}/model", "churnguard"
+        )
         MlflowClient().transition_model_version_stage(
             name="churnguard",
             version=registered.version,

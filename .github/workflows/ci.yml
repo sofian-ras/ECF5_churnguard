@@ -49,7 +49,8 @@ jobs:
         run: pip install mypy pandas-stubs scikit-learn mlflow fastapi pydantic
 
       - name: Vérifier les types
-        run: mypy repo_depart/churnguard/
+        working-directory: repo_depart
+        run: mypy churnguard/
 
   test:
     runs-on: ubuntu-latest
@@ -102,6 +103,7 @@ jobs:
     if: failure()
     steps:
       - name: Notification Slack sur échec CI
+        continue-on-error: true
         uses: 8398a7/action-slack@v3
         with:
           status: failure

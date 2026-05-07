@@ -1,6 +1,13 @@
 import pandas as pd
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 from sklearn.pipeline import Pipeline
+
 
 def compute_metrics(model: Pipeline, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
     """Calcule les 5 métriques de classification et les retourne dans un dict."""
